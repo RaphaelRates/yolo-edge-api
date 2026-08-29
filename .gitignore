@@ -1,0 +1,22 @@
+# Pesos do modelo (gerenciados pelo DVC)
+# models/*.pt
+models/*.onnx
+
+
+# Outputs de inferência
+output/
+
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+
+# Imagens de teste grandes
+images/
+
+
+# Variáveis de ambiente locais
+.env
