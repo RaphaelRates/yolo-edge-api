@@ -142,45 +142,46 @@ jobs:
   # JOB 3: Quality gate do modelo
   # Valida mAP@0.5 antes de autorizar o deploy
   # ─────────────────────────────────────────────────────────
-  model-gate:
-    name: "Model Quality Gate"
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+model-gate:
+  name: "Model Quality Gate"
+  needs: build
+  runs-on: ubuntu-latest
 
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Conecta à rede Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+    - name: Conecta à rede Tailscale
+      uses: tailscale/github-action@v4
+      with:
+        authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
+    - name: Setup Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: pip
 
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
+    - name: Instalar dependências
+      run: pip install ultralytics "dvc[ssh]"
 
+    - name: Recuperar modelo via DVC
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.RPI_SSH_KEY }}" | tr -d '\r' > ~/.ssh/dvc_key
+        chmod 600 ~/.ssh/dvc_key
+        dvc remote modify --local local_remote keyfile ~/.ssh/dvc_key
+        dvc pull
 
-      - name: Instalar dependências
-        run: pip install ultralytics "dvc[ssh]"
+    - name: Recuperar dataset via DVC
+      run: dvc pull dataset/exports/epi-v1
 
-
-      - name: Recuperar modelo via DVC
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.RPI_SSH_KEY }}" | tr -d '\r' > ~/.ssh/dvc_key
-          chmod 600 ~/.ssh/dvc_key
-          dvc remote modify --local local_remote keyfile ~/.ssh/dvc_key
-          dvc pull models/yolov8n.pt
-
-
-      - name: Executar quality gate (mAP@0.5 >= 0.50)
-        run: python scripts/validate_model.py --threshold 0.50
-
-
+    - name: Executar quality gate com dataset customizado
+      run: |
+        python scripts/validate_model.py \
+          --model models/yolo-epi.pt \
+          --dataset dataset/exports/epi-v1/data.yaml \
+          --threshold 0.60
 
 
   # ─────────────────────────────────────────────────────────
@@ -223,3 +224,5 @@ jobs:
           echo "Deploy status: ${{ job.status }}"
           echo "Commit: ${{ github.sha }}"
           echo "Triggered by: ${{ github.actor }}"
+
+
