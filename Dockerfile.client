@@ -1,6 +1,17 @@
 FROM python:3.11-slim-bookworm
+
 WORKDIR /client
+
+# Copia e instala dependências
 COPY client/requirements.txt .
-RUN pip install --no-cache-dir httpx Pillow
+RUN if [ -f requirements.txt ]; then \
+        pip install --no-cache-dir -r requirements.txt; \
+    else \
+        echo "WARNING: requirements.txt not found, installing default packages"; \
+        pip install --no-cache-dir httpx Pillow; \
+    fi
+
+# Copia o código do cliente
 COPY client/ .
+
 CMD ["python", "client.py"]

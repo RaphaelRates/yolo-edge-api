@@ -1,0 +1,8 @@
+names:
+- Capacete
+- Colete
+- Pessoa
+path: /home/tezika/yolo-edge-api/preprocessing/outputs/_tmp_eval/E3_D__GaussianBlur_7_7
+test: images
+train: images
+val: images

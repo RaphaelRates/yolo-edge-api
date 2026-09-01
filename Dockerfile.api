@@ -1,21 +1,33 @@
 FROM python:3.11-slim-bookworm
 
+# Instala dependências do sistema e rpicam
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libgl1 libglib2.0-0 libgomp1 curl gnupg ca-certificates && \
+        libgl1 \
+        libglib2.0-0 \
+        libgomp1 \
+        curl \
+        gnupg \
+        ca-certificates \
+        build-essential \
+        && \
     curl -fsSL https://archive.raspberrypi.com/debian/raspberrypi.gpg.key \
         | gpg --dearmor -o /usr/share/keyrings/raspberrypi-archive-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/raspberrypi-archive-keyring.gpg] https://archive.raspberrypi.com/debian/ bookworm main" \
         > /etc/apt/sources.list.d/raspi.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends rpicam-apps-lite && \
+    apt-get install -y --no-install-recommends rpicam-apps-lite || true && \
     rm -rf /var/lib/apt/lists/*
-
 
 WORKDIR /app
 
-# Instala dependências Python
+# Copia e instala dependências Python
 COPY app/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN if [ -f requirements.txt ]; then \
+        pip install --no-cache-dir -r requirements.txt; \
+    else \
+        echo "WARNING: requirements.txt not found, installing default packages"; \
+        pip install --no-cache-dir fastapi uvicorn[standard] python-multipart ultralytics opencv-python-headless numpy pillow; \
+    fi
 
 # Copia o código da aplicação
 COPY app/ .

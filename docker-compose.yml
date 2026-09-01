@@ -1,4 +1,7 @@
 services:
+  # ─────────────────────────────────────────────────────────
+  # Serviço principal da API YOLO
+  # ─────────────────────────────────────────────────────────
   yolo-api:
     build:
       context: .
@@ -6,15 +9,18 @@ services:
     container_name: yolo-api
     ports:
       - "8000:8000"
-    privileged: true             # Permite acesso aos nós de mídia e DMA da câmera
+    privileged: true
     volumes:
-      - ./models:/app/models:ro  # Pesos somente-leitura
-      - ./output:/app/output     # Resultados gravados aqui
-      - ./images:/app/images:ro  # Imagens de teste
-      - /dev:/dev                # Mapeia dispositivos de hardware do host
-      - /run/udev:/run/udev:ro   # Permite ao libcamera identificar o sensor via udev
+      - ./models:/app/models:ro
+      - ./output:/app/output
+      - ./images:/app/images:ro
+      - ./app:/app/app
+      - /dev:/dev
+      - /run/udev:/run/udev:ro
     environment:
       - MODEL_NAME=yolov8n.pt
+      - MODEL_PATH=/app/models/yolov8n.pt
+      - CONFIDENCE=0.4
     networks:
       - yolo-net
     restart: unless-stopped
@@ -23,8 +29,45 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 40s
 
+  # ─────────────────────────────────────────────────────────
+  # Serviço de streaming com câmera (Raspberry Pi 5)
+  # ─────────────────────────────────────────────────────────
+  yolo-stream:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: yolo-stream
+    ports:
+      - "5000:5000"
+    privileged: true
+    volumes:
+      - ./stream:/app/stream
+      - ./models:/app/models:ro
+      - ./output:/app/output
+      - /dev:/dev
+      - /run/udev:/run/udev:ro
+    environment:
+      - MODEL_NAME=yolov8n.pt
+      - MODEL_PATH=/app/models/yolov8n.pt
+      - CONFIDENCE=0.4
+    command: >
+      python3 stream/mjpeg_server.py
+      --device 0
+      --infer-every 3
+      --infer-size 320
+      --port 5000
+    networks:
+      - yolo-net
+    restart: unless-stopped
+    depends_on:
+      yolo-api:
+        condition: service_healthy
 
+  # ─────────────────────────────────────────────────────────
+  # Cliente para processamento de imagens
+  # ─────────────────────────────────────────────────────────
   yolo-client:
     build:
       context: .
@@ -40,7 +83,7 @@ services:
     depends_on:
       yolo-api:
         condition: service_healthy
-
+    restart: unless-stopped
 
 networks:
   yolo-net:

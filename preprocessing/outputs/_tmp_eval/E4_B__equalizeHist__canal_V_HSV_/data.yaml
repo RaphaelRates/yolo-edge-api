@@ -1,0 +1,8 @@
+names:
+- Capacete
+- Colete
+- Pessoa
+path: /home/tezika/yolo-edge-api/preprocessing/outputs/_tmp_eval/E4_B__equalizeHist__canal_V_HSV_
+test: images
+train: images
+val: images

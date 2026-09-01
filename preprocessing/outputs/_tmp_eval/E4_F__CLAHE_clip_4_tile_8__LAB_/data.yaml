@@ -1,0 +1,8 @@
+names:
+- Capacete
+- Colete
+- Pessoa
+path: /home/tezika/yolo-edge-api/preprocessing/outputs/_tmp_eval/E4_F__CLAHE_clip_4_tile_8__LAB_
+test: images
+train: images
+val: images
