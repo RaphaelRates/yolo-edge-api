@@ -22,4 +22,6 @@ images/
 .env
 
 
-coisa.txt
+coisa.txtpreprocessing/outputs/
+__pycache__/
+runs/
